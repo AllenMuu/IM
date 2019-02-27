@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>图书列表</title>
+    <link rel="stylesheet" th:href="@{/easy/css/bootstrap.css}" />
+    <link rel="stylesheet" th:href="@{/icon/css/font-awesome.min.css}" />
+</head>
+<body>
+<table border="1">
+    <tr>
+        <td>图书作者</td>
+        <td>图书名称</td>
+        <td>图书价格</td>
+        <td>图书出版社</td>
+    </tr>
+    <tr th:each="book:${bookList}">
+        <td th:text="${book.author}"></td>
+        <td th:text="${book.bookName}"></td>
+        <td th:text="${book.bookPrice}"></td>
+        <td th:text="${book.publishHouse}"></td>
+    </tr>
+</table>
+</body>
+</html>

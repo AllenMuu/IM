@@ -11,10 +11,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderUtil;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
@@ -25,19 +26,19 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @description:
- * @author: Mr.Joe
- * @create:
+ * MyChannelHandler
+ * @author qiaomu
+ * @date 2019/2/26
  */
 public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
-    @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyChannelHandler.class);
 
@@ -51,7 +52,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         LOGGER.info("【handlerAdded】====>" + ctx.channel().id());
         GlobalUserUtil.channels.add(ctx.channel());
     }
@@ -62,7 +63,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(ChannelHandlerContext ctx) {
         LOGGER.info("【handlerRemoved】====>" + ctx.channel().id());
         GlobalUserUtil.channels.remove(ctx);
     }
@@ -74,7 +75,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         LOGGER.error("【系统异常】======>" + cause.toString());
         ctx.close();
         ctx.channel().close();
@@ -86,7 +87,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) {
         LOGGER.info("【channelActive】=====>" + ctx.channel());
     }
 
@@ -96,7 +97,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(ChannelHandlerContext ctx) {
     }
 
     /**
@@ -105,7 +106,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();
     }
 
@@ -116,7 +117,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @throws Exception
      */
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent stateEvent = (IdleStateEvent) evt;
             PingWebSocketFrame ping = new PingWebSocketFrame();
@@ -134,6 +135,8 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
                 case ALL_IDLE:
                     LOGGER.info("【" + ctx.channel().remoteAddress() + "】读写空闲");
                     break;
+                default:
+                    break;
             }
         }
     }
@@ -144,7 +147,8 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
      * @param msg
      * @throws Exception
      */
-    protected void messageReceived(ChannelHandlerContext ctx, Object msg) throws Exception {
+    @Override
+    protected void messageReceived(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpRequest) {
             doHandlerHttpRequest(ctx, (HttpRequest) msg);
         } else if (msg instanceof WebSocketFrame) {
@@ -176,15 +180,32 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
             ctx.channel().writeAndFlush(ping);
             return;
         }
-        if (!(msg instanceof TextWebSocketFrame)) {
-            LOGGER.info("【不支持二进制】");
-            throw new UnsupportedOperationException("不支持二进制");
+        if (msg instanceof TextWebSocketFrame) {
+            //群发
+            for (Channel channel : GlobalUserUtil.channels) {
+                channel.writeAndFlush(new TextWebSocketFrame(((TextWebSocketFrame) msg).text()));
+            }
+            return;
+        }
+        //支持二进制消息
+        if (msg instanceof BinaryWebSocketFrame) {
+            BinaryWebSocketFrame img = (BinaryWebSocketFrame) msg;
+            ByteBuf byteBuf = img.content();
+            try (FileOutputStream outputStream = new FileOutputStream("D:\\a.jpg")) {
+                byteBuf.readBytes(outputStream, byteBuf.capacity());
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            byteBuf.clear();
+            return;
         }
         //可以对消息进行处理
         //群发
-        for (Channel channel : GlobalUserUtil.channels) {
+        /*for (Channel channel : GlobalUserUtil.channels) {
             channel.writeAndFlush(new TextWebSocketFrame(((TextWebSocketFrame) msg).text()));
-        }
+        }*/
 
     }
 
@@ -207,8 +228,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
         ctx.channel().attr(AttributeKey.valueOf("type")).set(uri);
         //可以通过url获取其他参数
         WebSocketServerHandshakerFactory factory = new WebSocketServerHandshakerFactory(
-                "ws://" + msg.headers().get("Host") + "/" + URI + "", null, false
-        );
+                "ws://" + msg.headers().get("Host") + "/" + URI + "", null, false);
         handshaker = factory.newHandshaker(msg);
         if (handshaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
@@ -220,14 +240,14 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
 
     private static void sendHttpResponse(ChannelHandlerContext ctx, FullHttpRequest req, DefaultFullHttpResponse res) {
         // 返回应答给客户端
-        if (res.status().code() != 200) {
+        if (res.status().code() != HttpResponseStatus.OK.code()) {
             ByteBuf buf = Unpooled.copiedBuffer(res.status().toString(), CharsetUtil.UTF_8);
             res.content().writeBytes(buf);
             buf.release();
         }
         // 如果是非Keep-Alive，关闭连接
         ChannelFuture f = ctx.channel().writeAndFlush(res);
-        if (!HttpUtil.isKeepAlive(req) || res.status().code() != 200) {
+        if (!HttpHeaderUtil.isKeepAlive(req) || res.status().code() != HttpResponseStatus.OK.code()) {
             f.addListener(ChannelFutureListener.CLOSE);
         }
     }

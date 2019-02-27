@@ -1,6 +1,8 @@
 package com.vichain.chat.server;
 
 import com.vichain.chat.handle.ChatHandler;
+import com.vichain.chat.handle.MyChannelHandler;
+import com.vichain.chat.handle.ServerHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -53,6 +55,6 @@ public class WsServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new WebSocketServerProtocolHandler("/websocket"));
 
         //自定义handler
-        pipeline.addLast(new ChatHandler());
+        pipeline.addLast(new ServerHandler());
     }
 }

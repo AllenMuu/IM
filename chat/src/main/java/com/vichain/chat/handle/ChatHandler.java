@@ -1,6 +1,7 @@
 package com.vichain.chat.handle;
 
 import com.vichain.chat.bean.DataContent;
+import com.vichain.chat.bean.MsgActionEnum;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -8,18 +9,18 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import java.util.Date;
 
 /**
  * 自定义业务处理
  */
-public class ChatHandler extends SimpleChannelInboundHandler<Object> {
+public class ChatHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
     static public ChannelGroup clients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-
-        /*Channel currentChannel = ctx.channel();
+    protected void messageReceived(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
+       /* Channel currentChannel = ctx.channel();
         //获取客户端传输过来的消息
         String content = msg.text();
 
@@ -73,19 +74,21 @@ public class ChatHandler extends SimpleChannelInboundHandler<Object> {
         } else if (action == MsgActionEnum.KEEPALIVE.getType()) {
             //2.2心跳类型的消息
             System.out.println("收到【" + ctx.channel() + "】的心跳包！");
-        }
+        }*/
 
 
-        *//*
+
         //群发
         TextWebSocketFrame tws = new TextWebSocketFrame(new Date().toString() + "--"
-                + ctx.channel().id() + "===》" + content);
+                + ctx.channel().id() + "===》" + msg.text());
         for (Channel channel : clients) {
             channel.writeAndFlush(tws);
-        }*//*
+        }
 
 //      下面这个方法 和上面的for循环 一致
-//       clients.writeAndFlush(tws);*/
+//       clients.writeAndFlush(tws);
+
+
 
     }
 

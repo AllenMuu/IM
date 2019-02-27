@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mystery</title>
+    <link rel="stylesheet" th:href="@{/easy/css/bootstrap.css}"/>
+    <link rel="stylesheet" th:href="@{/icon/css/font-awesome.min.css}"/>
+</head>
+<body class="bg-c">
+<div class="container-fluid" ms-controller="vm">
+    <div class="row">
+        <div class="col text-center bg-primary text-white">唐诗宋词</div>
+    </div>
+    <div class="row mt-2">
+        <div class="col">
+            <div class="form-inline">
+                <!-- 搜索类型 -->
+                <select class="form-control form-control-sm" id="select">
+                    <option value="1">按内容</option>
+                    <option value="2">按作者</option>
+                </select>
+                <!-- 关键词 -->
+                <input class="form-control form-control-sm ml-2" id="word" type="text"/>
+                <!-- 提交按钮 -->
+                <button class="btn btn-sm btn-primary ml-2" onclick="search();">搜索</button>
+            </div>
+        </div>
+    </div>
+    <!-- 显示区域 -->
+    <div class="row mt-2">
+        <div class="col">
+            <div ms-for="p in @list">
+                <div class="card mt-2">
+                    <div class="card-body">
+                        <div class="text-danger">{{p.title}}</div>
+                        <hr/>
+                        <div>{{p.author}}</div>
+                        <div>{{p.content}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- js -->
+<script th:src="@{/easy/js/jquery.js}"></script>
+<script th:src="@{/easy/js/avalon.js}"></script>
+<script th:src="@{/page/jqpaginator.js}"></script>
+<script th:src="@{/layer/layer.js}"></script>
+<script>
+    var vm = avalon.define({
+        $id: "vm",
+        list: []
+    });
+
+    // search
+    function search() {
+        // findByContent
+        if ($("select").val() == 1) {
+            $.post("/mystery/Poetry/findByContent", {
+                content: $("#word").val()
+            }, function (data) {
+                //alert(data);
+                vm.list = data;
+            });
+        }
+        // findByAuthor
+        if ($("select").val() == 2) {
+            $.post("/mystery/Poetry/findByAuthor", {
+                author: $("#word").val()
+            }, function (data) {
+                vm.list = data;
+            })
+        }
+    }
+
+</script>
+</body>
+</html>
