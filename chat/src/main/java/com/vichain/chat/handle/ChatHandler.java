@@ -1,7 +1,5 @@
 package com.vichain.chat.handle;
 
-import com.vichain.chat.bean.DataContent;
-import com.vichain.chat.bean.MsgActionEnum;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

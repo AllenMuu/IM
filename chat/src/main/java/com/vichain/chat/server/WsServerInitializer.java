@@ -12,10 +12,10 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
-/**b
- * @description: 初始化操作
- * @author: Mr.Joe
- * @create:
+/**
+ * 初始化操作
+ * @author QIAOMU
+ * @date 2019-02-27
  */
 public class WsServerInitializer extends ChannelInitializer<SocketChannel> {
     @Override
@@ -41,7 +41,7 @@ public class WsServerInitializer extends ChannelInitializer<SocketChannel> {
 
         // ===================增加心跳===================
         // 如果是读写空闲  不处理
-        pipeline.addLast(new IdleStateHandler(8,10,12));
+        pipeline.addLast(new IdleStateHandler(2*60,2*60,2*60));
         // 自定义空闲状态检测
         pipeline.addLast(new HeartBeatHandler());
 

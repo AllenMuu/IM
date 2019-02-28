@@ -1,5 +1,6 @@
-package com.vichain.chat.server;
+package com.vichain.nettyserver.server;
 
+import com.sun.org.omg.CORBA.Initializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 
 /**
- *
  * 考虑反射:
  * 由于在调用 SingletonHolder.instance 的时候，才会对单例进行初始化，而且通过反射，是不能从外部类获取内部类的属性的。
  * 所以这种形式，很好的避免了反射入侵。
@@ -19,38 +19,36 @@ import org.springframework.stereotype.Component;
  * 不需要传参的情况下 优先考虑静态内部类
  * @author QIAOMU
  * @date 2019-02-27
- *
  */
 @Component
-public class WsServer {
+public class NettyServer {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private ServerBootstrap server;
     private ChannelFuture future;
 
-    private static class SingletonWsServer{
-        static final WsServer instance = new WsServer();
+    private static class SingletonNettyServer {
+        static final NettyServer instance = new NettyServer();
     }
 
-    public static WsServer getInstance(){
-        return SingletonWsServer.instance;
+    static NettyServer getInstance() {
+        return SingletonNettyServer.instance;
     }
 
-    public WsServer() {
+    public NettyServer() {
         bossGroup = new NioEventLoopGroup();
-        workerGroup =new NioEventLoopGroup();
+        workerGroup = new NioEventLoopGroup();
         server = new ServerBootstrap();
 
         server.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new WsServerInitializer());// 自定义初始化handler容器
-        //.option(ChannelOption.SO_BACKLOG, 128)// 设置tcp协议的请求等待队列
-        //.childOption(ChannelOption.SO_KEEPALIVE, true);
+                .childHandler(new ServerInitializer())
+                .option(ChannelOption.SO_BACKLOG, 128)
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
     }
 
-        public void start(){
+    void start() {
         //自定义端口8288
-        this.future = server.bind(8288);
+        this.future = server.bind(8388);
     }
-
 }

@@ -1,4 +1,4 @@
-package com.vichain.chat.server;
+package com.vichain.nettyserver.server;
 
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * @date 2019-02-27
  */
 @Component
-public class NettyServer implements ApplicationListener<ContextRefreshedEvent> {
+public class NettyListener implements ApplicationListener<ContextRefreshedEvent> {
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
         if (contextRefreshedEvent.getApplicationContext().getParent() == null) {

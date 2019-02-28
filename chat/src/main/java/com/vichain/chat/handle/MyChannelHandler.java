@@ -54,7 +54,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         LOGGER.info("【handlerAdded】====>" + ctx.channel().id());
-        GlobalUserUtil.channels.add(ctx.channel());
+        GlobalUserUtil.clients.add(ctx.channel());
     }
 
     /**
@@ -65,7 +65,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
         LOGGER.info("【handlerRemoved】====>" + ctx.channel().id());
-        GlobalUserUtil.channels.remove(ctx);
+        GlobalUserUtil.clients.remove(ctx);
     }
 
     /**
@@ -182,7 +182,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
         }
         if (msg instanceof TextWebSocketFrame) {
             //群发
-            for (Channel channel : GlobalUserUtil.channels) {
+            for (Channel channel : GlobalUserUtil.clients) {
                 channel.writeAndFlush(new TextWebSocketFrame(((TextWebSocketFrame) msg).text()));
             }
             return;
@@ -203,7 +203,7 @@ public class MyChannelHandler extends SimpleChannelInboundHandler<Object> {
         }
         //可以对消息进行处理
         //群发
-        /*for (Channel channel : GlobalUserUtil.channels) {
+        /*for (Channel channel : GlobalUserUtil.clients) {
             channel.writeAndFlush(new TextWebSocketFrame(((TextWebSocketFrame) msg).text()));
         }*/
 

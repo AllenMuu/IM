@@ -1,5 +1,6 @@
 package com.vichain.chat.handle;
 
+import com.vichain.chat.util.GlobalUserUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -37,14 +38,11 @@ import java.util.Map;
 import org.springframework.util.StringUtils;
 
 /**
- * @description:
- * @author: Mr.Joe
- * @create:
+ * webSocketHandler
+ * @author QIAOMU
+ * @date 2019-02-28
  */
 public class ServerHandler extends SimpleChannelInboundHandler<Object> {
-
-    static public ChannelGroup clients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-
 
     private WebSocketServerHandshaker handshaker;
 
@@ -55,8 +53,9 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         // 添加
-        clients.add(ctx.channel());
-        clients.writeAndFlush(new TextWebSocketFrame("当前用户数:" + clients.size()));
+
+        GlobalUserUtil.clients.add(ctx.channel());
+        GlobalUserUtil.clients.writeAndFlush(new TextWebSocketFrame(new Date().toString() + "当前用户数:" + GlobalUserUtil.clients.size()));
     }
 
     /**
@@ -66,8 +65,9 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         // 移除
-        clients.remove(ctx.channel());
-        clients.writeAndFlush(new TextWebSocketFrame("==用户" + ctx.channel().id() + "退出" + "===当前用户数为" + clients.size()));
+
+        GlobalUserUtil.clients.remove(ctx.channel());
+        GlobalUserUtil.clients.writeAndFlush(new TextWebSocketFrame(new Date().toString() + "==用户" + ctx.channel().id() + "退出" + "===当前用户数为" + GlobalUserUtil.clients.size()));
     }
 
     /**
@@ -105,20 +105,38 @@ public class ServerHandler extends SimpleChannelInboundHandler<Object> {
             ctx.channel().write(new PongWebSocketFrame(frame.content().retain()));
             return;
         }
-        // 判断文本消息，不支持二进制消息
+        // 判断是否为文本消息
         if (frame instanceof TextWebSocketFrame) {
             // 返回应答消息
             String request = ((TextWebSocketFrame) frame).text();
             if (StringUtils.isEmpty(request.trim())) {
+                return;
+            }
+            String[] array = request.split(",");
+            String userId = array[0];
+            String receiverId = array[1];
+            String message = array[2];
+            if (StringUtils.isEmpty(userId)) {
+                return;
+            }
+            if (!GlobalUserUtil.hasChannel(userId)) {
+                GlobalUserUtil.userChannelInfo.put(userId, ctx.channel());
+            }
+            if (StringUtils.isEmpty(message.trim())) {
                 // 返回【谁发的发给谁】
                 ctx.channel().writeAndFlush("发送内容不能为空!");
+                return;
             }
-            TextWebSocketFrame tws = new TextWebSocketFrame(new Date().toString() + ctx.channel().id() + "：" + request);
-            // 群发
-            clients.writeAndFlush(tws);
+            if (StringUtils.isEmpty(receiverId)){
+                // 发送给所有人
+                GlobalUserUtil.clients.writeAndFlush(new TextWebSocketFrame(message));
+                return;
+            }
+            ctx.channel().writeAndFlush(message);
+            GlobalUserUtil.sendTextMessage(userId, receiverId, message, ctx.channel());
+            return;
         }
-
-        // 判断二进制消息
+        // 判断是否为二进制消息
         if (frame instanceof BinaryWebSocketFrame) {
             BinaryWebSocketFrame img = (BinaryWebSocketFrame) frame;
             ByteBuf byteBuf = img.content();
