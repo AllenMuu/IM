@@ -1,6 +1,5 @@
 package com.vichain.nettyserver.server;
 
-import com.sun.org.omg.CORBA.Initializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -22,10 +21,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class NettyServer {
-    private EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
     private ServerBootstrap server;
-    private ChannelFuture future;
 
     private static class SingletonNettyServer {
         static final NettyServer instance = new NettyServer();
@@ -36,8 +32,8 @@ public class NettyServer {
     }
 
     public NettyServer() {
-        bossGroup = new NioEventLoopGroup();
-        workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
         server = new ServerBootstrap();
 
         server.group(bossGroup, workerGroup)
@@ -48,7 +44,7 @@ public class NettyServer {
     }
 
     void start() {
-        //自定义端口8288
-        this.future = server.bind(8388);
+        int port = 8388;
+        ChannelFuture future = server.bind(port);
     }
 }
