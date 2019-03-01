@@ -1,6 +1,7 @@
 package com.vichain.client;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -8,11 +9,16 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestEncoder;
 import io.netty.handler.codec.http.HttpResponseDecoder;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.channel.socket.SocketChannel;
+import javax.net.ssl.SSLEngine;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,14 +26,13 @@ import org.springframework.stereotype.Component;
  * @author: Mr.Joe
  * @create:
  */
-@Component
 public class WebSocketClient extends Thread {
 
-    private static final String host = "127.0.0.1";
-    private static final int port = 8333;
-
+    private static final String HOST = "127.0.0.1";
+    private static final int PORT = 8388;
 
     private EventLoopGroup group = new NioEventLoopGroup(8);
+
     public static Channel channel = null;
 
     private boolean isShutDown = false;
@@ -56,27 +61,28 @@ public class WebSocketClient extends Thread {
 
             try {
 
-                Bootstrap bootstrap = new Bootstrap();
-                bootstrap.option(ChannelOption.TCP_NODELAY, true);
-                bootstrap.option(ChannelOption.SO_SNDBUF, 1024 * 1024 * 64); // 发送缓冲区大小
-                bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-                bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000);
-                bootstrap.group(group).channel(NioSocketChannel.class);
-                bootstrap.handler(new ChannelInitializer<SocketChannel>() {
+                Bootstrap client = new Bootstrap();
+                client.group(group).channel(NioSocketChannel.class)
+                        .option(ChannelOption.SO_BACKLOG, 128)
+                        .option(ChannelOption.SO_KEEPALIVE, true)
+                        .channel(NioServerSocketChannel.class)
+                        .handler(new ChannelInitializer<SocketChannel>() {
 
-                    @Override
-                    protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            @Override
+                            protected void initChannel(SocketChannel socketChannel) throws Exception {
 
-                        ChannelPipeline pipeline = socketChannel.pipeline();
-                        pipeline.addLast("encoder", new HttpRequestEncoder());
-                        pipeline.addLast("decoder", new HttpResponseDecoder());
-                        pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
-                        pipeline.addLast("dispatcher", new WebSocketClientHandler());
-                    }
-                });
+                                ChannelPipeline pipeline = socketChannel.pipeline();
+
+
+                                pipeline.addLast(new HttpServerCodec())
+                                        .addLast(new ChunkedWriteHandler())
+                                        .addLast(new HttpObjectAggregator(1024 * 64))
+                                        .addLast(new IMClientHandler());
+                            }
+                        });
 
                 // 启动服务器
-                ChannelFuture ChannelFuture = bootstrap.connect(host, port).sync();
+                ChannelFuture ChannelFuture = client.connect(HOST, PORT).sync();
 
                 // 获取Channel
                 channel = ChannelFuture.channel();
@@ -88,6 +94,7 @@ public class WebSocketClient extends Thread {
                 throw new Exception("文件服务器客户端已关闭，等待重启...");
 
             } catch (Exception e) {
+                e.printStackTrace();
             }
 
             if (isShutDown) {
@@ -98,6 +105,7 @@ public class WebSocketClient extends Thread {
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -110,4 +118,5 @@ public class WebSocketClient extends Thread {
         // 等待数据的传输通道关闭
         group.shutdownGracefully();
     }
+
 }

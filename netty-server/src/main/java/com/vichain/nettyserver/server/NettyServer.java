@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class NettyServer {
+    private static final int PORT = 8400;
     private ServerBootstrap server;
 
     private static class SingletonNettyServer {
@@ -44,7 +45,6 @@ public class NettyServer {
     }
 
     void start() {
-        int port = 8388;
-        ChannelFuture future = server.bind(port);
+        ChannelFuture future = server.bind(PORT);
     }
 }
